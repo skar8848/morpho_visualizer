@@ -129,7 +129,7 @@ export default function StrategyGauge({ nodes, edges }: StrategyGaugeProps) {
   const netApyColor = metrics.netApy > 0 ? "text-success" : metrics.netApy < 0 ? "text-error" : "text-text-secondary";
 
   return (
-    <div className="absolute left-4 top-4 z-30 flex items-center gap-4 rounded-xl border border-border bg-bg-card/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
+    <div className="absolute left-[272px] top-4 z-30 flex items-center gap-4 rounded-xl border border-border bg-bg-card/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
       {/* Net APY */}
       <div className="flex flex-col items-center gap-0.5">
         <span className="text-[8px] font-semibold uppercase tracking-wider text-text-tertiary">

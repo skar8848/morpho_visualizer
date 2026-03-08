@@ -62,28 +62,27 @@ export default function Navbar() {
         ))}
       </div>
 
-      {/* Wrong network banner — left side, after tabs */}
-      {mounted && wrongChain && (
-        <button
-          onClick={async () => {
-            try { await switchChainAsync({ chainId: currentChain.chainId }); } catch { /* user rejected */ }
-          }}
-          className="ml-4 flex items-center gap-1.5 rounded-xl border border-orange-400/30 bg-orange-400/10 px-3 py-2 text-xs font-medium text-orange-400 transition-colors hover:bg-orange-400/20"
-        >
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <path d="M8 1l7 13H1L8 1z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M8 6v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="8" cy="11.5" r="0.6" fill="currentColor" />
-          </svg>
-          Switch to {currentChain.label}
-        </button>
-      )}
-
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Chain selector + Connect */}
       <div className="flex items-center gap-3">
+        {/* Wrong network — left of chain selector */}
+        {mounted && wrongChain && (
+          <button
+            onClick={async () => {
+              try { await switchChainAsync({ chainId: currentChain.chainId }); } catch { /* user rejected */ }
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-orange-400/30 bg-orange-400/10 px-3 py-2 text-xs font-medium text-orange-400 transition-colors hover:bg-orange-400/20"
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1l7 13H1L8 1z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M8 6v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="8" cy="11.5" r="0.6" fill="currentColor" />
+            </svg>
+            Switch to {currentChain.label}
+          </button>
+        )}
         {/* Chain selector */}
         <div className="relative">
           <button
