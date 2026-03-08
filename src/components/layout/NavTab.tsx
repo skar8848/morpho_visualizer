@@ -7,20 +7,34 @@ interface NavTabProps {
   href: string;
   label: string;
   badge?: string;
+  external?: boolean;
 }
 
-export default function NavTab({ href, label, badge }: NavTabProps) {
+export default function NavTab({ href, label, badge, external }: NavTabProps) {
   const pathname = usePathname();
-  const isActive = pathname.startsWith(href);
+  const isActive = !external && pathname.startsWith(href);
+
+  const className = `relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+    isActive
+      ? "text-text-primary"
+      : "text-text-tertiary hover:text-text-secondary"
+  }`;
+
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {label}
+        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" className="opacity-40">
+          <path d="M3.5 8.5l5-5M4.5 3.5h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </a>
+    );
+  }
 
   return (
     <Link
       href={href}
-      className={`relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
-        isActive
-          ? "text-text-primary"
-          : "text-text-tertiary hover:text-text-secondary"
-      }`}
+      className={className}
     >
       {label}
       {badge && (

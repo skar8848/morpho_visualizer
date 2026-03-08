@@ -26,12 +26,12 @@ export default function Navbar() {
   const { chainId: walletChainId } = useAccount();
   const wrongChain = isConnected && walletChainId !== undefined && walletChainId !== currentChain.chainId;
 
+  const morphoBase = slug === "base" ? "https://app.morpho.org/base" : "https://app.morpho.org";
   const tabs = [
-    { href: `/${slug}/explore`, label: "Explore" },
-    { href: `/${slug}/earn`, label: "Earn" },
-    { href: `/${slug}/borrow`, label: "Borrow" },
+    { href: `${morphoBase}/explore`, label: "Explore", external: true },
+    { href: `${morphoBase}/earn`, label: "Earn", external: true },
+    { href: `${morphoBase}/borrow`, label: "Borrow", external: true },
     { href: `/${slug}/migrate`, label: "Migrate" },
-    { href: `/${slug}/strategy`, label: "Strategy" },
     { href: `/${slug}/canvas`, label: "Canvas", badge: "NEW" },
     { href: `/${slug}/address`, label: "Address" },
   ];
