@@ -32,6 +32,7 @@ export function useCanvasState() {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const initialized = useRef(false);
+  const wasImported = useRef(false);
 
   // --- Undo / Redo history ---
   const historyRef = useRef<SavedGraph[]>([]);
@@ -97,6 +98,7 @@ export function useCanvasState() {
     if (imported) {
       setNodes(imported.nodes);
       setEdges(imported.edges);
+      wasImported.current = true;
       return;
     }
 
@@ -310,5 +312,6 @@ export function useCanvasState() {
     pushHistory,
     setNodes,
     setEdges,
+    wasImported,
   };
 }

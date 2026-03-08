@@ -40,6 +40,7 @@ export default function CanvasPage() {
     pushHistory,
     setEdges,
     setNodes,
+    wasImported,
   } = useCanvasState();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -139,6 +140,31 @@ export default function CanvasPage() {
   const onInit = useCallback((instance: any) => {
     reactFlowInstance.current = instance;
   }, []);
+
+  // Auto-organize after importing positions from address page
+  useEffect(() => {
+    if (!wasImported.current || nodes.length === 0) return;
+    wasImported.current = false;
+
+    // Wait for DOM nodes to render so we can measure sizes
+    const timer = setTimeout(() => {
+      const sizes = new Map<string, { w: number; h: number }>();
+      for (const n of nodes) {
+        const el = document.querySelector(`[data-id="${n.id}"]`) as HTMLElement | null;
+        if (el) sizes.set(n.id, { w: el.offsetWidth, h: el.offsetHeight });
+      }
+      isOrganizing.current = true;
+      const organized = organizeLayout(nodes as CanvasNode[], edges, sizes);
+      setNodes(organized);
+      setTimeout(() => {
+        reactFlowInstance.current?.fitView({ padding: 0.2 });
+        isOrganizing.current = false;
+      }, 500);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes.length]);
 
   // Drag & drop from sidebar
   const onDragOver = useCallback((event: DragEvent) => {
