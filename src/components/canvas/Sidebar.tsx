@@ -70,7 +70,7 @@ export default function Sidebar({ onAddPosition, highlightType }: SidebarProps) 
               Add Nodes
             </p>
             <div className="space-y-1.5">
-              {DRAGGABLE_NODE_TYPES.map(({ type, label, icon }) => (
+              {DRAGGABLE_NODE_TYPES.map(({ type, label, icon, shortcut }) => (
                 <div
                   key={type}
                   draggable
@@ -87,7 +87,10 @@ export default function Sidebar({ onAddPosition, highlightType }: SidebarProps) 
                   >
                     {icon}
                   </span>
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  <kbd className="rounded bg-bg-secondary px-1.5 py-0.5 text-[9px] font-mono text-text-tertiary">
+                    {shortcut}
+                  </kbd>
                 </div>
               ))}
             </div>

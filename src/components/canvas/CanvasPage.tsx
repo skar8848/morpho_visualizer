@@ -15,7 +15,7 @@ import { nodeTypes } from "./nodes";
 import { edgeTypes } from "./edges";
 import { useCanvasState } from "@/lib/canvas/useCanvasState";
 import { isValidConnection, getConnectionHint } from "@/lib/canvas/validation";
-import { VALID_CONNECTIONS, type CanvasNode } from "@/lib/canvas/types";
+import { VALID_CONNECTIONS, DRAGGABLE_NODE_TYPES, NODE_SHORTCUTS, NODE_COLORS, type CanvasNode } from "@/lib/canvas/types";
 import Sidebar from "./Sidebar";
 import ExecuteButton from "./ExecuteButton";
 
@@ -38,6 +38,10 @@ export default function CanvasPage() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reactFlowInstance = useRef<any>(null);
+
+  // Node placement mode (keyboard shortcut)
+  const [placingNodeType, setPlacingNodeType] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Connection hint state
   const [connectionHint, setConnectionHint] = useState<{
@@ -208,7 +212,21 @@ export default function CanvasPage() {
     hintTimerRef.current = setTimeout(() => setConnectionHint(null), 3000);
   }, [nodes]);
 
-  // Keyboard handler — Delete + Ctrl+Z
+  // Place node on canvas click (keyboard shortcut mode)
+  const onPaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (!placingNodeType || !reactFlowInstance.current) return;
+      const position = reactFlowInstance.current.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      addNode(placingNodeType, position);
+      setPlacingNodeType(null);
+    },
+    [placingNodeType, addNode]
+  );
+
+  // Keyboard handler — Delete + Ctrl+Z + node shortcuts
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       const tag = (event.target as HTMLElement).tagName;
@@ -223,6 +241,26 @@ export default function CanvasPage() {
 
       // Delete/Backspace — only when not in input
       if (inInput) return;
+
+      if (event.key === "Escape") {
+        setPlacingNodeType(null);
+        setShowHelp(false);
+        return;
+      }
+
+      if (event.key === "?") {
+        setShowHelp((prev) => !prev);
+        return;
+      }
+
+      // Node placement shortcuts (S/B/X/D/W)
+      const nodeType = NODE_SHORTCUTS[event.key.toLowerCase()];
+      if (nodeType) {
+        event.preventDefault();
+        setPlacingNodeType((prev) => (prev === nodeType ? null : nodeType));
+        return;
+      }
+
       if (event.key === "Delete" || event.key === "Backspace") {
         const selected = nodes.filter((n) => n.selected);
         selected.forEach((n) => {
@@ -351,7 +389,7 @@ export default function CanvasPage() {
   return (
     <div
       ref={reactFlowWrapper}
-      className="relative h-[calc(100vh-var(--nav-height))] w-full"
+      className={`relative h-[calc(100vh-var(--nav-height))] w-full ${placingNodeType ? "[&_.react-flow__pane]:cursor-crosshair" : ""}`}
       onKeyDown={onKeyDown}
       tabIndex={0}
     >
@@ -378,6 +416,7 @@ export default function CanvasPage() {
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         onConnectEnd={onConnectEnd}
+        onPaneClick={onPaneClick}
         onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         onInit={onInit}
@@ -425,6 +464,92 @@ export default function CanvasPage() {
       </ReactFlow>
 
       <ExecuteButton nodes={nodes as CanvasNode[]} edges={edges} />
+
+      {/* Placement mode indicator */}
+      {placingNodeType && (
+        <div className="pointer-events-none absolute left-1/2 bottom-24 z-50 -translate-x-1/2 animate-fade-in">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-border bg-bg-card/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+            <span
+              className="flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white"
+              style={{ backgroundColor: NODE_COLORS[placingNodeType] }}
+            >
+              {DRAGGABLE_NODE_TYPES.find((t) => t.type === placingNodeType)?.icon}
+            </span>
+            <span className="text-xs font-medium text-text-primary">
+              Click to place{" "}
+              <span className="text-brand">
+                {DRAGGABLE_NODE_TYPES.find((t) => t.type === placingNodeType)?.label}
+              </span>
+            </span>
+            <kbd className="rounded bg-bg-secondary px-1.5 py-0.5 text-[10px] text-text-tertiary">ESC</kbd>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard shortcuts help modal */}
+      {showHelp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            className="w-[360px] rounded-2xl border border-border bg-bg-card p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-text-primary">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowHelp(false)}
+                className="text-text-tertiary transition-colors hover:text-text-primary"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-1">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                Place Nodes
+              </p>
+              {DRAGGABLE_NODE_TYPES.map(({ type, label, shortcut }) => (
+                <div
+                  key={type}
+                  className="flex items-center justify-between rounded-lg px-2 py-1.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex h-4 w-4 items-center justify-center rounded text-[8px] font-bold text-white"
+                      style={{ backgroundColor: NODE_COLORS[type] }}
+                    />
+                    <span className="text-xs text-text-primary">{label}</span>
+                  </div>
+                  <kbd className="rounded border border-border bg-bg-secondary px-2 py-0.5 text-[11px] font-mono text-text-secondary">
+                    {shortcut}
+                  </kbd>
+                </div>
+              ))}
+              <div className="!mt-3 border-t border-border pt-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                  General
+                </p>
+                {[
+                  ["Ctrl+Z", "Undo"],
+                  ["Delete", "Delete selected node"],
+                  ["Escape", "Cancel placement"],
+                  ["?", "Toggle this help"],
+                ].map(([key, desc]) => (
+                  <div key={key} className="flex items-center justify-between rounded-lg px-2 py-1.5">
+                    <span className="text-xs text-text-primary">{desc}</span>
+                    <kbd className="rounded border border-border bg-bg-secondary px-2 py-0.5 text-[11px] font-mono text-text-secondary">
+                      {key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top-right buttons */}
       <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
@@ -490,6 +615,13 @@ export default function CanvasPage() {
             <path d="M2 9l3.5-3 3 2.5L11 6l3 3v1.5a1 1 0 01-1 1H3a1 1 0 01-1-1V9z" fill="currentColor" fillOpacity="0.3" />
           </svg>
           Screenshot
+        </button>
+        <button
+          onClick={() => setShowHelp((prev) => !prev)}
+          className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-border bg-bg-card/90 text-xs font-bold text-text-tertiary transition-colors hover:text-brand"
+          title="Keyboard shortcuts (?)"
+        >
+          ?
         </button>
         <button
           onClick={clearGraph}

@@ -117,9 +117,14 @@ export const NODE_COLORS: Record<string, string> = {
 // --- Sidebar draggable node types ---
 
 export const DRAGGABLE_NODE_TYPES = [
-  { type: "supplyCollateral", label: "Supply Collateral", icon: "+" },
-  { type: "borrow", label: "Borrow", icon: "B" },
-  { type: "swap", label: "Swap (CowSwap)", icon: "S" },
-  { type: "vaultDeposit", label: "Vault Deposit", icon: "V" },
-  { type: "vaultWithdraw", label: "Vault Withdraw", icon: "W" },
+  { type: "supplyCollateral", label: "Supply Collateral", icon: "+", shortcut: "S" },
+  { type: "borrow", label: "Borrow", icon: "B", shortcut: "B" },
+  { type: "swap", label: "Swap (CowSwap)", icon: "S", shortcut: "X" },
+  { type: "vaultDeposit", label: "Vault Deposit", icon: "V", shortcut: "D" },
+  { type: "vaultWithdraw", label: "Vault Withdraw", icon: "W", shortcut: "W" },
 ] as const;
+
+/** Keyboard shortcut → node type mapping (lowercase key) */
+export const NODE_SHORTCUTS: Record<string, string> = Object.fromEntries(
+  DRAGGABLE_NODE_TYPES.map((t) => [t.shortcut.toLowerCase(), t.type])
+);

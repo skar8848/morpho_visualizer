@@ -113,8 +113,6 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
   const [totalApprovals, setTotalApprovals] = useState(0);
   const [swapStatus, setSwapStatus] = useState<string | null>(null);
 
-  // Snapshot of nodes/edges at confirmation time
-  const snapshotRef = useRef<{ nodes: CanvasNode[]; edges: Edge[] } | null>(null);
   // Track wallet address via ref for reliable detection during async flow
   const addressRef = useRef(address);
   addressRef.current = address;
@@ -229,7 +227,6 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
   // Handle approval + execution flow
   const handleExecute = useCallback(async () => {
     if (!address || !isConnected) return;
-    if (isExecutingRef.current) return; // Prevent double execution
     setError(null);
     setTxHash(null);
     setApprovalStep(0);
@@ -239,25 +236,22 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
     setValidationErrors(errors);
     if (errors.length > 0) {
       setShowConfirm(false);
-      snapshotRef.current = null;
       return;
     }
 
-    // 2. If not confirmed yet, snapshot and show confirmation (H2 fix)
+    // 2. If not confirmed yet, show confirmation dialog
     if (!showConfirm) {
-      snapshotRef.current = {
-        nodes: JSON.parse(JSON.stringify(nodes)),
-        edges: JSON.parse(JSON.stringify(edges)),
-      };
       setShowConfirm(true);
       return;
     }
 
-    // Use the snapshot from confirmation step, not current (potentially stale) state
-    const execNodes = snapshotRef.current?.nodes ?? nodes;
-    const execEdges = snapshotRef.current?.edges ?? edges;
-
+    // H1 fix: Guard + lock IMMEDIATELY before any async work
+    if (isExecutingRef.current) return;
     isExecutingRef.current = true;
+
+    // C2 fix: Always use current graph state (not stale first-click snapshot)
+    const execNodes = JSON.parse(JSON.stringify(nodes)) as CanvasNode[];
+    const execEdges = JSON.parse(JSON.stringify(edges)) as Edge[];
     try {
       const cid = chainId as SupportedChainId;
 
@@ -388,7 +382,7 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
           }
         }
 
-        if (addressRef.current !== address) {
+        if (addressRef.current !== currentAddress) {
           setError("Wallet address changed during execution. Aborting.");
           return;
         }
@@ -422,12 +416,23 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
               await sendApprovals(buildApprovalTxs(needed, adapter));
             }
           }
+          // C1 fix: Verify wallet hasn't changed after approvals
+          if (addressRef.current !== currentAddress) {
+            setError("Wallet address changed during execution. Aborting.");
+            return;
+          }
           setSwapStatus("Executing pre-swap operations...");
           await sendBundle(preSwapBundle);
         }
 
         // Phase 2: CowSwap orders
         const swapResults = new Map<string, bigint>();
+
+        // C1 fix: Verify wallet before CowSwap phase
+        if (addressRef.current !== currentAddress) {
+          setError("Wallet address changed during execution. Aborting.");
+          return;
+        }
 
         for (let i = 0; i < swaps.length; i++) {
           const swap = swaps[i];
@@ -506,7 +511,7 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
         }
 
         // Phase 3: Post-swap bundler operations (vault deposits with actual amounts)
-        if (addressRef.current !== address) {
+        if (addressRef.current !== currentAddress) {
           setError("Wallet address changed during execution. Aborting.");
           return;
         }
@@ -541,7 +546,6 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
       }
 
       setShowConfirm(false);
-      snapshotRef.current = null;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to build bundle");
     } finally {

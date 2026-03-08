@@ -56,7 +56,9 @@ export function useCanvasState() {
     setEdges(prev.edges);
   }, [setNodes, setEdges]);
 
-  // Initialize: check for imported strategy, otherwise fresh wallet node
+  const STORAGE_KEY = `morpho-canvas-${chainId}`;
+
+  // Initialize: imported strategy → localStorage draft → fresh layout
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -68,15 +70,45 @@ export function useCanvasState() {
       return;
     }
 
-    const initial = buildInitialLayout(
-      address,
-      slug,
-      chainId,
-      [],
-      []
-    );
+    // Load saved draft from localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as SavedGraph;
+        if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+          setNodes(parsed.nodes);
+          setEdges(parsed.edges || []);
+          return;
+        }
+      }
+    } catch { /* ignore corrupt data */ }
+
+    const initial = buildInitialLayout(address, slug, chainId, [], []);
     setNodes(initial);
   }, [address, slug, chainId, setNodes, setEdges]);
+
+  // Auto-save to localStorage (debounced 2s)
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (!initialized.current || nodes.length === 0) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        // Strip wallet balances (large, re-fetched on load)
+        const cleanNodes = nodes.map((n) => {
+          const d = n.data as { type: string };
+          if (d.type === "wallet") {
+            return { ...n, data: { ...n.data, balances: [] } } as CanvasNode;
+          }
+          return n;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes: cleanNodes, edges }));
+      } catch { /* quota exceeded, ignore */ }
+    }, 2000);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [nodes, edges, STORAGE_KEY]);
 
   // Connection handler with validation
   const onConnect: OnConnect = useCallback(
@@ -224,7 +256,8 @@ export function useCanvasState() {
     const initial = buildInitialLayout(address, slug, chainId, [], []);
     setNodes(initial);
     setEdges([]);
-  }, [address, slug, chainId, setNodes, setEdges, pushHistory]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  }, [address, slug, chainId, setNodes, setEdges, pushHistory, STORAGE_KEY]);
 
   return {
     nodes,
