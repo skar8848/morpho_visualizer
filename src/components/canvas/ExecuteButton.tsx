@@ -348,14 +348,13 @@ export default function ExecuteButton({ nodes, edges }: ExecuteButtonProps) {
           });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          // Extract revert reason if available
-          if (msg.includes("insufficient liquidity")) {
-            throw new Error("Simulation failed: insufficient market liquidity");
-          }
-          if (msg.includes("insufficient balance")) {
-            throw new Error("Simulation failed: insufficient token balance");
-          }
-          throw new Error(`Simulation failed — transaction would revert. ${msg.slice(0, 120)}`);
+          console.error("[ExecuteButton] estimateGas failed:", msg);
+          // Show the actual revert reason — truncate for display but keep it real
+          const clean = msg
+            .replace(/EstimateGasExecutionError:?\s*/i, "")
+            .replace(/Details:?\s*/i, "")
+            .slice(0, 200);
+          throw new Error(`Simulation failed — tx would revert: ${clean}`);
         }
 
         const bundleHash = await new Promise<`0x${string}`>((resolve, reject) => {
