@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/morpheus_logo.png" alt="Morpheus" width="120" />
+  <img src="public/morpheus_logo.svg" alt="Morpheus" width="120" />
 </p>
 
 <h1 align="center">Morpheus</h1>

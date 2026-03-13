@@ -42,7 +42,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 flex h-[var(--nav-height)] items-center border-b border-border bg-bg-primary/80 px-6 backdrop-blur-md">
       {/* Logo */}
       <div className="flex items-center gap-2 mr-8">
-        <Image src="/morpheus_logo.png" alt="Morpheus" width={32} height={32} className="object-contain" />
+        <Image src="/morpheus_logo.svg" alt="Morpheus" width={32} height={32} className="object-contain" />
         <span className="text-lg font-semibold text-text-primary">Morpheus</span>
       </div>
 
