@@ -2,6 +2,7 @@
 
 import { useState, type DragEvent } from "react";
 import Image from "next/image";
+import { useAccount } from "wagmi";
 import { useUserPositions } from "@/lib/hooks/useUserPositions";
 import { formatUsd, formatApy, formatTokenAmount } from "@/lib/utils/format";
 import { safeBigInt } from "@/lib/utils/bigint";
@@ -14,6 +15,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onAddPosition, highlightType }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { isConnected } = useAccount();
   const { marketPositions, vaultPositions, loading } = useUserPositions();
 
   const onDragStart = (event: DragEvent, nodeType: string) => {
@@ -125,7 +127,7 @@ export default function Sidebar({ onAddPosition, highlightType }: SidebarProps) 
               </div>
             ) : borrowPositions.length === 0 && vaultPos.length === 0 ? (
               <p className="text-[10px] text-text-tertiary">
-                Connect wallet to see positions
+                {isConnected ? "No open positions" : "Connect wallet to see positions"}
               </p>
             ) : (
               <div className="space-y-1.5">
@@ -207,7 +209,7 @@ export default function Sidebar({ onAddPosition, highlightType }: SidebarProps) 
       )}
 
       {/* Social links */}
-      <div className={`flex items-center border-t border-border px-3 py-3 ${collapsed ? "justify-center" : "gap-3"}`}>
+      <div className={`flex border-t border-border px-3 py-3 ${collapsed ? "flex-col items-center gap-2" : "flex-row items-center gap-3"}`}>
         <a
           href="https://x.com/0xhaizeka"
           target="_blank"
